@@ -1,0 +1,11 @@
+client id : vfgJnAeKzWWkThz4OcNMpdTVVQFr9OXPeEyCi4gd
+client secret : tB2a9hyH1tPgOozgtkQFeDwt5ssu3TLZFg8sftpZQnr5td1LO3j7IeSgdzW0RnTcBmRCUeeWlP8MQ7jlhYeLXHEFvoFurVRGGRxrLyyjg2Heh7OZlzSA7dDmhqt72iJM
+
+http://127.0.0.1:8000/o/authorize/?response_type=code&client_id=vfgJnAeKzWWkThz4OcNMpdTVVQFr9OXPeEyCi4gd&redirect_uri=http://127.0.0.1:8000/noexist/callback
+
+export ID=vfgJnAeKzWWkThz4OcNMpdTVVQFr9OXPeEyCi4gd
+export SECRET=tB2a9hyH1tPgOozgtkQFeDwt5ssu3TLZFg8sftpZQnr5td1LO3j7IeSgdzW0RnTcBmRCUeeWlP8MQ7jlhYeLXHEFvoFurVRGGRxrLyyjg2Heh7OZlzSA7dDmhqt72iJM
+
+
+admin@gmail.com
+mansi
