@@ -67,9 +67,9 @@ def createReport(preProfile,finresult,a,b,x,tempavg,countT,countS,spo2avg,bpavg,
     # Set column width to 1/4 of effective page width to distribute content 
     # evenly across table and page
     col_width = epw/5
-    PLOT_DIR = 'reports'
-    shutil.rmtree(PLOT_DIR)
-    os.mkdir(PLOT_DIR)
+    # PLOT_DIR = 'reports'
+    # shutil.rmtree(PLOT_DIR)
+    # os.mkdir(PLOT_DIR)
     pdf.image('assets/logoFinal.png', 0.02,0.01, 50,14)
     pdf.set_font('Times','B',14.0) 
     pdf.cell(epw, 0.0, 'Health Report', align='C')
@@ -664,7 +664,7 @@ class GetMessages(APIView):
 # Get the notification ID from the patient's id
 class GetNotificationID(APIView):
     def get(self,req,pk,format=None):
-        result=query(F"select id from elder_notification where patid_id='{pk}' and approved=False;")
+        result=query(F"select id from elder_notification where patid_id='{pk}';")
         if len(result)==1:return Response(result)
 
         return Response("False")
