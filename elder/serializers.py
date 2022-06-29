@@ -77,3 +77,8 @@ class PostImageSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.ImageStore
         fields = '__all__'
+
+class PatientImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.PatientImage
+        fields = '__all__'

@@ -14,7 +14,8 @@ from rest_framework.views import APIView
 import calendar
 from calendar import monthrange
 from .apps import ElderConfig
-import numpy as np
+from rest_framework.parsers  import MultiPartParser,FormParser
+
 
 
 
@@ -388,8 +389,19 @@ class NotificationViewset(viewsets.ModelViewSet):
     filter_backends = (filters.SearchFilter,)
     search_fields = ('patid','staffid')
 
+# class ImageViewset(viewsets.ModelViewSet):
+#     queryset = models.ImageStore.objects.all()
+#     serializer_class = serializers.PostImageSerializer
+#     # permission_classes = (permissions.UpdateOwnProfilePat,)
+#     # authentication_classes = (TokenAuthentication,)
+#     filter_backends = (filters.SearchFilter,)
+#     search_fields = ('patid','pname')
 
-def mlmodel(request):
+
+
+
+# def mlmodel(): yeh tera function
+def mlmodel1(request):
     bpmval = float(request.data['bpmval']) / 255
     tempval = float(request.data['tempval']) / 255
     spo2val = float(request.data['spo2val']) / 255
@@ -402,32 +414,15 @@ def mlmodel(request):
     
 class Vitals(APIView):
     def post(self, request,format=None):
-        bpval=mlmodel(request)
+        bpval=mlmodel1(request)
         request.data["bpval"]=bpval
         p = serializers.VitalSerializer(data=request.data)
         if p.is_valid(raise_exception=True):
             p.save()
         return Response({'message':'saved'})
 
-# class Falldetection(APIView):
-#     def post(self,request):
-#         fall=mlmodel1(request)
-#         return Response({'message':fall})
-        
 
-def mlmodel1(request):
-    ax = float(request.data['acc_x']) 
-    ay = float(request.data['acc_y']) 
-    az = float(request.data['acc_z'])
-    gx = float(request.data['gyro_x']) 
-    gy = float(request.data['gyro_y']) 
-    gz = float(request.data['gyro_z'])
-    label = float(request.data['label']) 
-    fall_random_forest_model = ElderConfig.model3
-    fall_preadict = fall_random_forest_model.predict([[ax, ay, az, gx, gy, gz]])
-    # fall_preadict = fall_random_forest_model.score([[ax, ay, az, gx, gy, gz, label]])
-    fall = fall_preadict
-    return (fall)
+
 
 class VerifyView(APIView):
     
@@ -693,6 +688,11 @@ class GetNotifiedPatient(APIView):
 
 
 import face_recognition
+import base64
+from django.core.files.base import ContentFile
+import urllib.request
+from PIL import Image
+
 
 class ImageViewset(APIView):
     def __init__(self):
@@ -703,30 +703,37 @@ class ImageViewset(APIView):
         self.face_names = []
         self.known_image = []    
         self.counter = 0
-
         
 
-    def face_recog_setup_one(self):    
+    def face_recog_setup_one(self,id):
+        result = query(f"select * from elder_patientimage where patid={id}")
+        # print(result[0]['imageFile'])
+        urllib.request.urlretrieve(
+        f"https://patientmedia.s3.ap-south-1.amazonaws.com/{result[0]['imageFile']}",result[0]['imageFile'][6:])
+        known_image = face_recognition.load_image_file(result[0]['imageFile'][6:])
+        print("known-image : ",known_image)
+        # print(result[0]['imageFile'])
         try:
-            known_image = face_recognition.load_image_file('media/image.jpg')
+            # known_image = face_recognition.load_image_file(result[0]['imageFile'])
+            # print("known-image : ",known_image)
+           
             self.known_face_encoding.append(face_recognition.face_encodings(known_image)[0])
         except Exception as e:  
             pass
-        print("Completed loading the encoding of the image, Now saving them in JSON format")
-        # self.save_to_json_one(req)
-        print("Data saved in JSON format")
+        # print(self.known_face_encoding)
         return self.known_face_encoding[0].tolist()
     
-
+    def base64_file(self,req,name="dumb"):
+        imgstr = req.data['imgstr']
+        ext = req.data['type'].split('/')[-1]
+        # if not name:
+        #     name = _name.split(":")[-1]
+        return ContentFile(base64.b64decode(imgstr), name='{}.{}'.format(name+str(req.data['patid']), ext))
 
     def post(self, req):
-        import io, base64
-        from PIL import Image
-        img = Image.open(io.BytesIO(base64.decodebytes(bytes(req.data["imgstr"], "utf-8"))))
-        print(img)
-        img.save('media/image.jpg')
-
-        x=self.face_recog_setup_one()
+        image = models.PatientImage(imageFile=self.base64_file(req),patid=req.data['patid'])
+        image.save()
+        x=self.face_recog_setup_one(req.data["patid"])
         req.data["encoding"]=x
         try:
             p=serializers.PostImageSerializer(data=req.data)
@@ -734,77 +741,47 @@ class ImageViewset(APIView):
                 p.save()
         except Exception as e:
             pass
-        return Response({"message":"doneeeeeeeeeeeeeeeeeeeeeee yaya"})  
+        return Response({"message":"donee yaya"})
+        # print(image)
+        # import io, base64
+        # from PIL import Image
+        # imgstr = req.data['imgstr']
+        # # print(image_data)
+        # # format, imgstr = image_data.split(';base64,')
+        # # print("format : ", req.data['type'])
+        # ext = req.data['type'].split('/')[-1]
+        # data = ContentFile(base64.b64decode(imgstr))  
+        # file_name = "'myphoto." + ext
+        # print("file name : ",file_name)
+        # img = Image.open(io.BytesIO(base64.decodebytes(bytes(req.data["imgstr"], "utf-8"))))
+        # img.save('media/image.jpg')
 
-         
+
+        # try:
+        #     im=serializers.PatientImageSerializer(data={"imageFile":file_name,"patid":req.data["patid"]})
+            
+        #     if im.is_valid(raise_exception=True):
+        #         print("haan validate toh hua")
+        #         im.save()
+        #         x=self.face_recog_setup_one(req.data["patid"])
+        #         req.data["encoding"]=x
+        #         try:
+        #             p=serializers.PostImageSerializer(data=req.data)
+        #             if p.is_valid(raise_exception=True):
+        #                 p.save()
+        #         except Exception as e:
+        #             pass
+        #         return Response({"message":"doneeeeeeeeeeeeeeeeeeeeeee yaya"}) 
+        # except Exception as e:
+        #     pass
+        # return Response({"message":"not done yaya"}) 
+
+                  
 
 
 # yahan pe karo change
 class CompareImages(APIView):
-    def __init__(self):
-        self.possible_faces = []
-        self.sum_max = 0
-        self.database_wala_face_encodings = list()
-        self.database_wala_face_id = list()
-        self.database_wala_face_name = list()
-    
     def post(self,req,format=None):
-        raw_query = f"""SELECT * FROM elder_imagestore"""
-        result=query(raw_query)
-        print(result)
-        if result==[]:
-            return Response("Got no encodings")
-        else:
-            for i in result:
-                self.database_wala_face_encodings.append(i["encoding"])
-                self.database_wala_face_id.append(i["id"])
-                self.database_wala_face_name.append(i["pname"])
+        print(req.data["encodings"])
 
-        print("Loading known face images.")
-        print("Database Encodings: ", self.database_wala_face_encodings)
-        print("Database Ids: ", self.database_wala_face_id)
-
-    
-        temp_dict = {"patid": int, "pname":str, "counter": int}
-        for cfe in range(len(self.database_wala_face_id)):
-            temp_dict["patid"]= self.database_wala_face_id[cfe]
-            temp_dict["pname"]= self.database_wala_face_name[cfe]
-            temp_dict["counter"] = 0
-            self.possible_faces.append(temp_dict.copy())
-        
-        id = None
-
-        #=======================================================================
-        # Create a get request from hardware to acquire captured images
-        
-        captured_images_list = list()
-        captured_images_list=(req.data["hardware"])
-        print(captured_images_list)
-        captured_images_nparray=list()
-        for cil in captured_images_list :
-            captured_images_nparray.append(np.array(cil))
-        
-        for ci in captured_images_nparray:
-            matches = face_recognition.compare_faces(self.database_wala_face_encodings, np.array(ci))
-            print(matches)
-            c = 0
-            for m in matches:
-                if m:
-                    self.possible_faces[c]["counter"] += 1
-                c += 1       
-                
-        for pf in self.possible_faces:
-            print("PF COUNTER: ", pf['counter'])
-            print("SUM_MAX: ",self.sum_max)
-            if pf['counter'] > self.sum_max:
-                self.sum_max = pf['counter']
-                id = int(pf['patid'])
-                name = pf['pname']
-                print(id)
-            
-        if self.sum_max <= len(self.database_wala_face_encodings )/2.0:   
-            print('Unable to identify the person')   
-            id = -1   
-            print(self.possible_faces)
-        print("Identified person's ID as {} and Name as {}.".format(id, name))
-        return Response({id, name}, status=200)
+        return Response("False")

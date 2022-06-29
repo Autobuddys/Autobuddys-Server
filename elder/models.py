@@ -126,7 +126,12 @@ class ImageStore(models.Model):
         return("Patient ID "+str(self.patid)+" - "+"pname "+str(self.pname))
 
 
+class PatientImage(models.Model):
+    patid = models.IntegerField(unique=True,primary_key=True)
+    imageFile=models.FileField(upload_to='media/')
 
+    def __str__(self):
+        return("Patient ID "+str(self.patid))
 
 
 
