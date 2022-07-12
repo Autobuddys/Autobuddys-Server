@@ -711,13 +711,14 @@ class ImageViewset(APIView):
         urllib.request.urlretrieve(
         f"https://patientmedia.s3.ap-south-1.amazonaws.com/{result[0]['imageFile']}",result[0]['imageFile'][6:])
         known_image = face_recognition.load_image_file(result[0]['imageFile'][6:])
-        print("known-image : ",known_image)
+        # print("known-image : ",known_image)
         # print(result[0]['imageFile'])
         try:
             # known_image = face_recognition.load_image_file(result[0]['imageFile'])
             # print("known-image : ",known_image)
            
             self.known_face_encoding.append(face_recognition.face_encodings(known_image)[0])
+            os.remove(result[0]['imageFile'][6:])
         except Exception as e:  
             pass
         # print(self.known_face_encoding)
@@ -742,39 +743,7 @@ class ImageViewset(APIView):
         except Exception as e:
             pass
         return Response({"message":"donee yaya"})
-        # print(image)
-        # import io, base64
-        # from PIL import Image
-        # imgstr = req.data['imgstr']
-        # # print(image_data)
-        # # format, imgstr = image_data.split(';base64,')
-        # # print("format : ", req.data['type'])
-        # ext = req.data['type'].split('/')[-1]
-        # data = ContentFile(base64.b64decode(imgstr))  
-        # file_name = "'myphoto." + ext
-        # print("file name : ",file_name)
-        # img = Image.open(io.BytesIO(base64.decodebytes(bytes(req.data["imgstr"], "utf-8"))))
-        # img.save('media/image.jpg')
-
-
-        # try:
-        #     im=serializers.PatientImageSerializer(data={"imageFile":file_name,"patid":req.data["patid"]})
-            
-        #     if im.is_valid(raise_exception=True):
-        #         print("haan validate toh hua")
-        #         im.save()
-        #         x=self.face_recog_setup_one(req.data["patid"])
-        #         req.data["encoding"]=x
-        #         try:
-        #             p=serializers.PostImageSerializer(data=req.data)
-        #             if p.is_valid(raise_exception=True):
-        #                 p.save()
-        #         except Exception as e:
-        #             pass
-        #         return Response({"message":"doneeeeeeeeeeeeeeeeeeeeeee yaya"}) 
-        # except Exception as e:
-        #     pass
-        # return Response({"message":"not done yaya"}) 
+        
 
                   
 
