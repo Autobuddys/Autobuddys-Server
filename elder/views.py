@@ -561,7 +561,7 @@ class RelativePatientDataView(APIView):
         result = query(
             f"select * from elder_patientrelative where patrel_id='{req.data['relID']}' and id='{req.data['patID']}'"
         )
-        result2 = query(
+        result2 = query( 
             f"select email,name,phone from elder_userprofile where id='{req.data['relID']}'"
         )
         res = result + result2
