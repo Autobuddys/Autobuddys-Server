@@ -15,7 +15,7 @@ class UserProfileManager(BaseUserManager):
         email = self.normalize_email(email)
         user = self.model(email=email,name=name,phone=phone,is_medical=is_medical)
         # print("I am in UserProfileManager : ",user.is_medical)
-        if is_medical==True:user.is_active = False
+        if is_medical==True:user.is_active = True
         else:user.is_active=True
         user.set_password(password)
         user.save(using=self._db)
@@ -51,7 +51,7 @@ class UserProfile(AbstractBaseUser,PermissionsMixin):
         return self.phone
     
     def __str__(self):
-        return (str(self.id)+" - "+self.email)
+        return (str(self.id)+" - "+self.email+"-"+self.name)
 
 
 class MedicalStaff(models.Model):
@@ -64,7 +64,7 @@ class MedicalStaff(models.Model):
 
 
     def __str__(self):
-        return(str(self.id))
+        return(str(self.hospname)+" City "+self.city)
 
 
 class PatientRelative(models.Model):
@@ -85,7 +85,7 @@ class PatientRelative(models.Model):
 
 
     def __str__(self):
-        return(str(self.id))
+        return(str(self.pname))
 
 class Vital(models.Model):
     patid = models.ForeignKey(PatientRelative,on_delete=models.CASCADE,db_index=False)

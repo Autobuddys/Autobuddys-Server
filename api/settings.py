@@ -9,11 +9,16 @@ https://docs.djangoproject.com/en/4.0/ref/settings/
 
 from pathlib import Path
 import django_heroku
-import environ
+
+# import environ
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 # Initialise environment variables
-env = environ.Env()
-environ.Env.read_env()
+# env = environ.Env()
+# environ.Env.read_env()
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -24,7 +29,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = env("SECRET_KEY")
+SECRET_KEY = os.getenv("SECRET_KEY")
 
 
 # SECURITY WARNING: don't run with debug turned on in production!
@@ -113,20 +118,50 @@ WSGI_APPLICATION = "api.wsgi.application"
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
 
+# DATABASES = {
+#     "default": {
+#         "ENGINE": "django.db.backends.sqlite3",
+#         "NAME": BASE_DIR / "db.sqlite3",
+#     }
+#     # "default": {
+#     #     "ENGINE": "django.db.backends.postgresql_psycopg2",
+#     #     "NAME": "autobuddy",
+#     #     "USER": os.getenv("DATABASE_USER"),
+#     #     "PASSWORD": os.getenv("DATABASE_PASS"),
+#     #     "HOST": "localhost",
+#     #     "PORT": "5432",
+#     # }
+# }
+
 DATABASES = {
     "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+        "ENGINE": "django.db.backends.postgresql",
+        "NAME": os.getenv("RDS_DB_NAME"),
+        "USER": os.getenv("RDS_USERNAME"),
+        "PASSWORD": os.getenv("RDS_PASSWORD"),
+        "HOST": os.getenv("RDS_HOSTNAME"),
+        "PORT": os.getenv("RDS_PORT"),
     }
-    # "default": {
-    #     "ENGINE": "django.db.backends.postgresql_psycopg2",
-    #     "NAME": "autobuddy",
-    #     "USER": env("DATABASE_USER"),
-    #     "PASSWORD": env("DATABASE_PASS"),
-    #     "HOST": "localhost",
-    #     "PORT": "5432",
-    # }
 }
+
+# if "RDS_DB_NAME" in os.getenv:
+#     DATABASES = {
+#         "default": {
+#             "ENGINE": "django.db.backends.postgresql_psycopg2",
+#             "NAME": os.getenv("RDS_DB_NAME"),
+#             "USER": os.getenv("RDS_USERNAME"),
+#             "PASSWORD": os.getenv("RDS_PASSWORD"),
+#             "HOST": os.getenv("RDS_HOSTNAME"),
+#             "PORT": os.getenv("RDS_PORT"),
+#         }
+#     }
+# else:
+#     DATABASES = {
+#         "default": {
+#             "ENGINE": "django.db.backends.sqlite3",
+#             "NAME": BASE_DIR / "db.sqlite3",
+#         }
+#     }
 
 
 # Password validation
@@ -212,8 +247,8 @@ EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = "smtp.gmail.com"
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = env("MAIL")
-EMAIL_HOST_PASSWORD = env("PASS")
+EMAIL_HOST_USER = os.getenv("MAIL")
+EMAIL_HOST_PASSWORD = os.getenv("PASS")
 
 
 django_heroku.settings(locals())
@@ -222,9 +257,9 @@ django_heroku.settings(locals())
 # DEFAULT_HOST = 'www'
 
 DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
-AWS_ACCESS_KEY_ID = env("AWS_ACCESS_KEY_ID")
-AWS_SECRET_ACCESS_KEY = env("AWS_SECRET_ACCESS_KEY")
-AWS_STORAGE_BUCKET_NAME = env("AWS_STORAGE_BUCKET_NAME")
+AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
+AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
+AWS_STORAGE_BUCKET_NAME = os.getenv("AWS_STORAGE_BUCKET_NAME")
 AWS_QUERYSTRING_AUTH = False
 
 

@@ -14,7 +14,13 @@ from rest_framework.views import APIView
 import calendar
 from calendar import monthrange
 from .apps import ElderConfig
-from rest_framework.parsers import MultiPartParser, FormParser
+from django.conf import settings
+from django.core.mail import EmailMultiAlternatives
+import face_recognition
+import base64
+from django.core.files.base import ContentFile
+import urllib.request
+from PIL import Image
 
 
 def query(q):  # function to execute raw sql query
@@ -745,11 +751,6 @@ class ChartDataView(APIView):
         return Response("nada")
 
 
-from django.core.mail import EmailMessage
-from django.conf import settings
-from django.template.loader import render_to_string
-
-
 class EmailView(APIView):
     def post(self, req):
         # template = render_to_string('templates/email_template.html', {'name':"mansi"})
@@ -761,14 +762,14 @@ class EmailView(APIView):
             f"select * from elder_medicalstaff where medstaff_id='{req.data['doctid']}';"
         )[0]
 
-        email = EmailMessage(
-            f"{result2['hospname']} has requested to add you.",
-            f"The request of adding has been received from .\n Hospital Name : {result2['hospname']}\n Hospital Address : {result2['address']},\n City : {result2['city']},\nState : {result2['state']},\nPincode : {result2['pincode']}\n\n If the request is genuine please login to the portal and approve the request.\nProvided link?\nWith 💖\nFrom Autobuddys.",
-            settings.EMAIL_HOST_USER,
-            [result["email"]],
+        message = EmailMultiAlternatives(
+            subject=f"{result2['hospname']} has requested to add you.",
+            body=f"The request of adding has been received from .\n Hospital Name : {result2['hospname']}\n Hospital Address : {result2['address']},\n City : {result2['city']},\nState : {result2['state']},\nPincode : {result2['pincode']}\n\n If the request is genuine please login to the portal and approve the request.\nProvided link?\nWith 💖\nFrom Autobuddys.",
+            from_email=settings.EMAIL_HOST_USER,
+            to=[result["email"]],
         )
-        email.fail_silently = False
-        email.send()
+        message.send(fail_silently=False)
+
         return Response("sentt")
 
 
@@ -852,13 +853,6 @@ class GetNotifiedPatient(APIView):
                 return Response(result2)
 
         return Response("False")
-
-
-import face_recognition
-import base64
-from django.core.files.base import ContentFile
-import urllib.request
-from PIL import Image
 
 
 class ImageViewset(APIView):
