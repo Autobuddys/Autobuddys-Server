@@ -1,0 +1,13 @@
+[Unit]
+Description=gunicorn daemon
+Requires=gunicorn.socket
+After=network.target
+[Service]
+User=ubuntu
+Group=www-data
+WorkingDirectory=/home/ubuntu/Autobuddys-Server
+ExecStart=/home/ubuntu/env/bin/gunicorn --access-logfile - --workers 3 --bind unix:/home/ubuntu/Autobuddys-Server/api/api.sock api.wsgi:application
+
+       
+[Install]
+WantedBy=multi-user.target

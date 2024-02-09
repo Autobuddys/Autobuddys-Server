@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt.token_blacklist",
     "oauth2_provider",
     "storages",
+    'whitenoise.runserver_nostatic',
 ]
 
 MIDDLEWARE = [
@@ -64,11 +65,12 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    'whitenoise.middleware.WhiteNoiseMiddleware'
 ]
 
 ROOT_URLCONF = "api.urls"
 
-# ALLOWED_HOSTS = ['127.0.0.1']
+# ALLOWED_HOSTS = ['127.0.0.1','3.108.220.136']
 
 # CORS_ORIGIN_ALLOW_ALL = True
 
@@ -263,5 +265,5 @@ AWS_STORAGE_BUCKET_NAME = os.getenv("AWS_STORAGE_BUCKET_NAME")
 AWS_QUERYSTRING_AUTH = False
 
 
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = ["*",'3.108.220.136']
 CORS_ORIGIN_ALLOW_ALL = True
