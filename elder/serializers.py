@@ -44,6 +44,7 @@ class PatientRelativeSerializer(serializers.ModelSerializer):
         fields= '__all__'
 
     def validate_pincode(self,value):
+        value = int(value)
         if value>855117 or value<110001:
             raise serializers.ValidationError('Invalid pin code!')
         return value
