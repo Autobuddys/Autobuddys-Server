@@ -48,6 +48,12 @@ urlpatterns = [
     ),
     path("imagepost/", views.ImageViewset.as_view(), name="posts_list"),
     path("hardwarepost/", views.CompareImages.as_view(), name="compare_images"),
+
+    path("start-enroll/<str:model_id>/<int:patient_id>/", views.StartEnrollView.as_view(), name="start_enroll"),
+    path("poll/<str:model_id>/", views.PollView.as_view(), name="poll"),
+    path("poll/result/<str:model_id>/", views.PollResultView.as_view(), name="poll_result"),
+    path("status/<str:model_id>/", views.StatusView.as_view(), name="status"),
+
     # path('falldetect/', views.Falldetection.as_view(), name="detect-fall"),
     path("", include(router.urls)),
 ]

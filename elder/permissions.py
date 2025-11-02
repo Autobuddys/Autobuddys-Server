@@ -11,10 +11,11 @@ class UpdateOwnProfile(permissions.BasePermission):
 class UpdateOwnProfilePat(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
         print("in permissions2 : ",str(request.user.email))
-        print("in permissions other2 : ",str(obj.patrel)[4:])
-        if request.method in permissions.SAFE_METHODS or request.method == 'POST':
+        print("in permissions other2 : ",str(obj.patrel).split("- ")[1])
+        if request.method in permissions.SAFE_METHODS or request.method=='POST':
+            print("Done")
             return True
-        return str(obj.patrel)[4:] == str(request.user.email)
+        return str(obj.patrel).split("- ")[1].strip() == str(request.user.email)
 
 class UpdateOwnProfileMed(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):

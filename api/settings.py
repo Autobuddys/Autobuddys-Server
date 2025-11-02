@@ -29,7 +29,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
+print("os.getenv", os.getenv("RDS_DB_NAME"))
 SECRET_KEY = os.getenv("SECRET_KEY")
+# SECRET_KEY = "SECRET_KEY"
+
 
 
 # SECURITY WARNING: don't run with debug turned on in production!
@@ -134,6 +137,8 @@ WSGI_APPLICATION = "api.wsgi.application"
 #     #     "PORT": "5432",
 #     # }
 # }
+
+# 
 
 DATABASES = {
     "default": {
@@ -252,18 +257,27 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = os.getenv("MAIL")
 EMAIL_HOST_PASSWORD = os.getenv("PASS")
 
+# EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+# EMAIL_HOST = "smtp.gmail.com"
+# EMAIL_PORT = 587
+# EMAIL_USE_TLS = True
+# EMAIL_HOST_USER = "yash.bhadane@spit.ac.in"
+# EMAIL_HOST_PASSWORD = "2018120007"
+
 
 django_heroku.settings(locals())
 
 # ROOT_HOSTCONF = 'api.hosts'
 # DEFAULT_HOST = 'www'
 
-DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
-AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
-AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
-AWS_STORAGE_BUCKET_NAME = os.getenv("AWS_STORAGE_BUCKET_NAME")
-AWS_QUERYSTRING_AUTH = False
+# DEFAULT_FILE_STORAGE = "storages.backends.s3boto3.S3Boto3Storage"
+# AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
+# AWS_SECRET_ACCESS_KEY = os.getenv("AWS_SECRET_ACCESS_KEY")
+# AWS_STORAGE_BUCKET_NAME = os.getenv("AWS_STORAGE_BUCKET_NAME")
+# AWS_QUERYSTRING_AUTH = False
 
 
 ALLOWED_HOSTS = ["*",'3.108.220.136']
+# ALLOWED_HOSTS = ["*",'192.168.1.36']
+
 CORS_ORIGIN_ALLOW_ALL = True

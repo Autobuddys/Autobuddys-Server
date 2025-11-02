@@ -9,8 +9,6 @@ from rest_framework.permissions import IsAuthenticated, AllowAny
 from elder import serializers, models, permissions
 from django.db import connection
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework.response import Response
-from rest_framework.views import APIView
 import calendar
 from calendar import monthrange
 from .apps import ElderConfig
@@ -21,7 +19,8 @@ import base64
 from django.core.files.base import ContentFile
 import urllib.request
 from PIL import Image
-
+import threading
+import numpy as np
 
 def query(q):  # function to execute raw sql query
     with connection.cursor() as c:
@@ -166,8 +165,8 @@ def createReport(
                 continue
             if (
                 (datum == 1 and (int(row[datum]) >= 34 or int(row[datum]) <= 30))
-                or (datum == 2 and (int(row[datum]) >= 80 or int(row[datum]) <= 30))
-                or (datum == 3 and (int(row[datum]) >= 30 or int(row[datum]) <= 20))
+                or (datum == 2 and (int(row[datum]) >= 90 or int(row[datum]) <= 100))
+                or (datum == 3 and (int(row[datum]) >= 70 or int(row[datum]) <= 20))
                 or (datum == 4 and (int(row[datum]) >= 50 or int(row[datum]) <= 20))
             ):
                 pdf.cell(col_width, th, str(row[datum]), border=1, align="C", fill=True)
@@ -177,7 +176,9 @@ def createReport(
         pdf.ln(th)
 
     pdf.ln(2 * th)
-    pdf.cell(epw, 0.0, "** The red fills indicate an abnormal reading!", align="L")
+    pdf.cell(epw, 0.0, "** The YELLOW fills indicate an WARNING reading!", align="L")
+    pdf.ln(th)
+    pdf.cell(epw, 0.0, "** The RED fills indicate an CRITICAL reading!", align="L")
     pdf.ln(4 * th)
     # pdf.output('reports/report.pdf','F')
     # print(buf)
@@ -476,6 +477,7 @@ class NotificationViewset(viewsets.ModelViewSet):
     search_fields = ("patid", "staffid")
 
 
+
 # class ImageViewset(viewsets.ModelViewSet):
 #     queryset = models.ImageStore.objects.all()
 #     serializer_class = serializers.PostImageSerializer
@@ -491,7 +493,8 @@ def mlmodel1(request):
     tempval = float(request.data["tempval"]) / 255
     spo2val = float(request.data["spo2val"]) / 255
     lin_reg_model = ElderConfig.model1
-    sbp_preadict = lin_reg_model.predict([[bpmval, tempval, spo2val]])[0][0]
+    input_data = np.array(([[bpmval, tempval, spo2val]]))
+    sbp_preadict = lin_reg_model.predict(input_data)[0][0]
     sbp_preadict = 255 * sbp_preadict
     bpval = sbp_preadict
     return bpval
@@ -518,7 +521,7 @@ class VerifyView(APIView):
             # print(decoded_token)
             id = decoded_token["user_id"]
             preProfile = query(f"select * from elder_userprofile where id='{id}';")[0]
-            # print(preProfile)
+            print(preProfile)
             if preProfile:
                 finuser = {
                     "id": preProfile["id"],
@@ -555,7 +558,7 @@ class BlacklistTokenUpdateView(APIView):
 class PatientListViewRelative(APIView):
     def get(self, req, pk, format=None):
         result = query(
-            f"select id, pname from elder_patientrelative where patrel_id='{pk}'"
+            f"select id, pname, pphone from elder_patientrelative where patrel_id='{pk}'"
         )
         if result == []:
             return Response("")
@@ -567,6 +570,7 @@ class RelativePatientDataView(APIView):
         result = query(
             f"select * from elder_patientrelative where patrel_id='{req.data['relID']}' and id='{req.data['patID']}'"
         )
+        print(result)
         result2 = query(
             f"select email,name,phone from elder_userprofile where id='{req.data['relID']}'"
         )
@@ -624,6 +628,7 @@ class VitalGraphDataView(APIView):
         if result == []:
             return Response("No readings for today!")
         else:
+            print(result)
             return Response(result)
 
 
@@ -673,9 +678,13 @@ class ChartDataView(APIView):
                     return Response(finres)
 
         elif pk[0] == "M":
-            result = query(
-                f"select * from elder_vital where patid_id='{pk[1:]}' order by entered_at asc"
-            )
+            start_month = datetime(x.year, x.month, 1)
+            raw_query = f"""SELECT * FROM elder_vital
+                        WHERE patid_id={pk[1:]}
+                        AND entered_at BETWEEN '{start_month}' AND '{x}'
+                        ORDER BY entered_at ASC"""
+            result = query(raw_query)
+            
             # raw_query = f"""SELECT * FROM elder_vital
             #             WHERE patid_id={pk[1:]}
             #             AND entered_at BETWEEN '{start_of_week}' AND '{end_of_week}'"""
@@ -691,7 +700,7 @@ class ChartDataView(APIView):
                     ):
                         finarr.append(i)
                 if finarr == []:
-                    return Response("No readings for the month!")
+                    return Response("No readings for the Month!")
                 else:
                     for i in finarr:
                         if str(i["entered_at"].date()) in finres:
@@ -723,7 +732,7 @@ class ChartDataView(APIView):
                         ORDER BY entered_at ASC"""
             result = query(raw_query)
             if result == []:
-                return Response("No readings for the month!")
+                return Response("No readings for the Year!")
             else:
                 finres = {}
                 for i in result:
@@ -899,6 +908,7 @@ class ImageViewset(APIView):
         )
 
     def post(self, req):
+        print("Hi")
         image = models.PatientImage(
             imageFile=self.base64_file(req), patid=req.data["patid"]
         )
@@ -920,3 +930,85 @@ class CompareImages(APIView):
         print(req.data["encodings"])
 
         return Response("False")
+
+# Thread-safe in-memory stores
+tasks = {}
+results = {}
+lock = threading.Lock()
+
+
+class StartEnrollView(APIView):
+    """
+    React triggers this to create an enrollment task for a specific Raspberry Pi.
+    POST /api/start-enroll/<model_id>/
+    """
+
+    def post(self, request, model_id, patient_id):
+        with lock:
+            if model_id not in tasks:
+                tasks[model_id] = []
+            tasks[model_id].append({"task": "enrollment", "patient_id": patient_id})
+            results[model_id] = {"status": "pending", "fingerprint_id": None}
+
+        print(f"Enrollment task created for {model_id}")
+        print(f"Enrollment task created for {patient_id} {type(patient_id)}")
+        return Response(
+            {"message": f"Enrollment task created for {model_id}"},
+            status=status.HTTP_201_CREATED
+        )
+
+
+class PollView(APIView):
+    """
+    Raspberry Pi polls this endpoint to get pending tasks.
+    GET /api/poll/<model_id>/
+    """
+
+    def get(self, request, model_id):
+        with lock:
+            device_tasks = tasks.get(model_id, [])
+            if device_tasks:
+                task = device_tasks.pop(0)
+                if not device_tasks:
+                    del tasks[model_id]
+                print(f"Sending task to {model_id}")
+                print(f"Sending task to {task['patient_id']} {type(task['patient_id'])}")
+
+                return Response({"task": task["task"], "model_id": model_id, "patient_id":task["patient_id"]}, status=status.HTTP_200_OK)
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class PollResultView(APIView):
+    """
+    Raspberry Pi posts result after completing a task.
+    POST /api/poll/result/<model_id>/
+    JSON body: {"fingerprint_id": "...", "status": "success"|"failed"}
+    """
+
+    def post(self, request, model_id):
+        data = request.data
+        result_status = data.get("status")
+
+        if not result_status:
+            return Response({"error": "Missing status"}, status=status.HTTP_400_BAD_REQUEST)
+
+        with lock:
+            results[model_id] = {
+                "status": result_status
+            }
+
+        print(f"Result received from {model_id}: {result_status}")
+        return Response({"message": "Result received"}, status=status.HTTP_200_OK)
+
+
+class StatusView(APIView):
+    """
+    React polls this to check current status of the device.
+    GET /api/status/<model_id>/
+    """
+
+    def get(self, request, model_id):
+        with lock:
+            data = results.get(model_id, {"status": "no_task", "fingerprint_id": None})
+        return Response(data, status=status.HTTP_200_OK)

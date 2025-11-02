@@ -12,6 +12,7 @@ class UserProfileManager(BaseUserManager):
             raise ValueError("User must have an email address")
         if not phone:
             raise ValueError("User must have a phone number")
+        print(email)
         email = self.normalize_email(email)
         user = self.model(email=email, name=name, phone=phone, is_medical=is_medical)
         user.is_active = True  # Set active regardless of is_medical
@@ -44,6 +45,7 @@ class UserProfile(AbstractBaseUser, PermissionsMixin):
 
     def get_full_name(self):
         return self.name
+    
 
     def get_mobile(self):
         return self.phone
@@ -77,6 +79,7 @@ class PatientRelative(models.Model):
     city = models.CharField(max_length=100)
     state = models.CharField(max_length=100)
     pincode = models.CharField(max_length=20)
+    modelnumber = models.CharField(max_length=10)
     dname = models.CharField(max_length=255)
     dphone = models.CharField(max_length=15)
 

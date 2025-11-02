@@ -4,7 +4,7 @@ from elder import models
 class UserProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.UserProfile
-        fields = ('id','name','email','password','phone','is_medical')
+        fields = ('id','name', 'email','password','phone','is_medical')
         extra_kwargs = {
             'password':{
                 'write_only' : True,
@@ -13,6 +13,7 @@ class UserProfileSerializer(serializers.ModelSerializer):
         }
     
     def create(self,validated_data):
+        print("validated_data", validated_data)
         user = models.UserProfile.objects.create_user(
             email=validated_data['email'],
             name=validated_data['name'],
