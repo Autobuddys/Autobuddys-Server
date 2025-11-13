@@ -277,7 +277,7 @@ django_heroku.settings(locals())
 # AWS_QUERYSTRING_AUTH = False
 
 
-ALLOWED_HOSTS = ["*",'3.108.220.136']
-# ALLOWED_HOSTS = ["*",'192.168.1.36']
+# ALLOWED_HOSTS = ["*",'3.108.220.136']
+ALLOWED_HOSTS = ["*",'192.168.1.36']
 
 CORS_ORIGIN_ALLOW_ALL = True

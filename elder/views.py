@@ -11,7 +11,7 @@ from django.db import connection
 from rest_framework_simplejwt.tokens import RefreshToken
 import calendar
 from calendar import monthrange
-from .apps import ElderConfig
+from .ml_loader import get_model1
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
 import face_recognition
@@ -20,7 +20,7 @@ from django.core.files.base import ContentFile
 import urllib.request
 from PIL import Image
 import threading
-import numpy as np
+
 
 def query(q):  # function to execute raw sql query
     with connection.cursor() as c:
@@ -477,7 +477,6 @@ class NotificationViewset(viewsets.ModelViewSet):
     search_fields = ("patid", "staffid")
 
 
-
 # class ImageViewset(viewsets.ModelViewSet):
 #     queryset = models.ImageStore.objects.all()
 #     serializer_class = serializers.PostImageSerializer
@@ -492,18 +491,19 @@ def mlmodel1(request):
     bpmval = float(request.data["bpmval"]) / 255
     tempval = float(request.data["tempval"]) / 255
     spo2val = float(request.data["spo2val"]) / 255
-    lin_reg_model = ElderConfig.model1
-    input_data = np.array(([[bpmval, tempval, spo2val]]))
-    sbp_preadict = lin_reg_model.predict(input_data)[0][0]
-    sbp_preadict = 255 * sbp_preadict
-    bpval = sbp_preadict
+    # lin_reg_model = ElderConfig.model1
+    model = get_model1()
+    sbp_predict = model.predict([[bpmval, tempval, spo2val]])[0][0]
+    # sbp_preadict = lin_reg_model.predict([[bpmval, tempval, spo2val]])[0][0]
+    sbp_predict = 255 * sbp_predict
+    bpval = sbp_predict
     return bpval
 
 
 class Vitals(APIView):
     def post(self, request, format=None):
-        bpval = mlmodel1(request)
-        request.data["bpval"] = bpval
+        # bpval = mlmodel1(request)
+        request.data["bpval"] = 70
         p = serializers.VitalSerializer(data=request.data)
         if p.is_valid(raise_exception=True):
             p.save()
@@ -684,7 +684,7 @@ class ChartDataView(APIView):
                         AND entered_at BETWEEN '{start_month}' AND '{x}'
                         ORDER BY entered_at ASC"""
             result = query(raw_query)
-            
+
             # raw_query = f"""SELECT * FROM elder_vital
             #             WHERE patid_id={pk[1:]}
             #             AND entered_at BETWEEN '{start_of_week}' AND '{end_of_week}'"""
@@ -931,6 +931,7 @@ class CompareImages(APIView):
 
         return Response("False")
 
+
 # Thread-safe in-memory stores
 tasks = {}
 results = {}
@@ -954,7 +955,7 @@ class StartEnrollView(APIView):
         print(f"Enrollment task created for {patient_id} {type(patient_id)}")
         return Response(
             {"message": f"Enrollment task created for {model_id}"},
-            status=status.HTTP_201_CREATED
+            status=status.HTTP_201_CREATED,
         )
 
 
@@ -972,9 +973,17 @@ class PollView(APIView):
                 if not device_tasks:
                     del tasks[model_id]
                 print(f"Sending task to {model_id}")
-                print(f"Sending task to {task['patient_id']} {type(task['patient_id'])}")
-
-                return Response({"task": task["task"], "model_id": model_id, "patient_id":task["patient_id"]}, status=status.HTTP_200_OK)
+                print(
+                    f"Sending task to {task["patient_id"]} {type(task["patient_id"])}"
+                )
+                return Response(
+                    {
+                        "task": task["task"],
+                        "model_id": model_id,
+                        "patient_id": task["patient_id"],
+                    },
+                    status=status.HTTP_200_OK,
+                )
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -991,12 +1000,12 @@ class PollResultView(APIView):
         result_status = data.get("status")
 
         if not result_status:
-            return Response({"error": "Missing status"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "Missing status"}, status=status.HTTP_400_BAD_REQUEST
+            )
 
         with lock:
-            results[model_id] = {
-                "status": result_status
-            }
+            results[model_id] = {"status": result_status}
 
         print(f"Result received from {model_id}: {result_status}")
         return Response({"message": "Result received"}, status=status.HTTP_200_OK)
