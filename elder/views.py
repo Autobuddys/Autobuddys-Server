@@ -20,6 +20,7 @@ from django.core.files.base import ContentFile
 import urllib.request
 from PIL import Image
 import threading
+import numpy as np
 
 
 def query(q):  # function to execute raw sql query
@@ -493,7 +494,9 @@ def mlmodel1(request):
     spo2val = float(request.data["spo2val"]) / 255
     # lin_reg_model = ElderConfig.model1
     model = get_model1()
-    sbp_predict = model.predict([[bpmval, tempval, spo2val]])[0][0]
+    input_data = np.array([[bpmval, tempval, spo2val]], dtype=float)
+    sbp_preadict = model.predict(input_data)[0][0]
+    #sbp_predict = model.predict([[bpmval, tempval, spo2val]])[0][0]
     # sbp_preadict = lin_reg_model.predict([[bpmval, tempval, spo2val]])[0][0]
     sbp_predict = 255 * sbp_predict
     bpval = sbp_predict
@@ -502,8 +505,8 @@ def mlmodel1(request):
 
 class Vitals(APIView):
     def post(self, request, format=None):
-        # bpval = mlmodel1(request)
-        request.data["bpval"] = 70
+        bpval = mlmodel1(request)
+        request.data["bpval"] = bpval
         p = serializers.VitalSerializer(data=request.data)
         if p.is_valid(raise_exception=True):
             p.save()
